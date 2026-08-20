@@ -28,6 +28,24 @@ jobs:
       - name: Determine Databricks target
         run: echo "TARGET=${GITHUB_REF_NAME}" >> "$GITHUB_ENV"
 
+      - name: Verify Databricks credentials
+        run: |
+          if [ -z "$DATABRICKS_HOST" ]; then
+            echo "❌ DATABRICKS_HOST is EMPTY"
+            exit 1
+          else
+            echo "✅ DATABRICKS_HOST exists"
+          fi
+
+          if [ -z "$DATABRICKS_TOKEN" ]; then
+            echo "❌ DATABRICKS_TOKEN is EMPTY"
+            exit 1
+          else
+            echo "✅ DATABRICKS_TOKEN exists"
+          fi
+
+          echo "Token length: ${#DATABRICKS_TOKEN}"
+
       - name: Check Databricks connection
         run: databricks current-user me
 
