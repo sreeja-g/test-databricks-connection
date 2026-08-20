@@ -67,7 +67,7 @@ jobs:
           echo "Databricks authentication successful."
 
       - name: Check Databricks connection
-        run: databricks current-user me
+        run: databricks current-user me --target "$TARGET"
 
       - name: Validate Databricks bundle
         run: databricks bundle validate --target "$TARGET"
