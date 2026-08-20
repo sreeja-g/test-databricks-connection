@@ -14,9 +14,11 @@ jobs:
     name: Deploy to Databricks
     runs-on: ubuntu-latest
 
-    env:
-      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+  env:
+    DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+    DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+    DATABRICKS_AUTH_TYPE: pat
+    TARGET: ${{ github.ref_name }}
 
     steps:
       - name: Checkout repository
@@ -24,9 +26,6 @@ jobs:
 
       - name: Install Databricks CLI
         uses: databricks/setup-cli@main
-
-      - name: Determine Databricks target
-        run: echo "TARGET=${GITHUB_REF_NAME}" >> "$GITHUB_ENV"
 
       - name: Verify Databricks credentials
         run: |
