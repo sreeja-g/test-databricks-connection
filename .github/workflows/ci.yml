@@ -3,21 +3,28 @@ name: CI
 on:
   pull_request:
     branches:
-      - main
+      - dev
+      - qa
+      - prod
 
 jobs:
-  ci:
+  unit-tests:
+    name: Unit Tests
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Check repository
-        run: |
-          echo "CI is running..."
-          echo "Repository contents:"
-          find . -type f
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
-      - name: CI passed
-        run: echo "✅ CI passed"
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run pytest
+        run: python -m pytest -v
