@@ -14,11 +14,11 @@ jobs:
     name: Deploy to Databricks
     runs-on: ubuntu-latest
 
-  env:
-    DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-    DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-    DATABRICKS_AUTH_TYPE: pat
-    TARGET: ${{ github.ref_name }}
+    env:
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+      DATABRICKS_AUTH_TYPE: pat
+      TARGET: ${{ github.ref_name }}
 
     steps:
       - name: Checkout repository
