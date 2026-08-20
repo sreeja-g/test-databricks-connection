@@ -46,6 +46,27 @@ jobs:
 
           echo "Token length: ${#DATABRICKS_TOKEN}"
 
+      - name: Diagnose Databricks authentication
+        run: |
+          echo "Host configured: $([[ -n "$DATABRICKS_HOST" ]] && echo YES || echo NO)"
+          echo "Token configured: $([[ -n "$DATABRICKS_TOKEN" ]] && echo YES || echo NO)"
+          echo "Token length: ${#DATABRICKS_TOKEN}"
+
+          HTTP_CODE=$(curl -sS -o /tmp/db_response.txt \
+            -w "%{http_code}" \
+            -H "Authorization: Bearer $DATABRICKS_TOKEN" \
+            "$DATABRICKS_HOST/api/2.0/preview/scim/v2/Me")
+
+          echo "Databricks API HTTP status: $HTTP_CODE"
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "Databricks authentication failed."
+            cat /tmp/db_response.txt
+            exit 1
+          fi
+
+          echo "Databricks authentication successful."
+
       - name: Check Databricks connection
         run: databricks current-user me
 
