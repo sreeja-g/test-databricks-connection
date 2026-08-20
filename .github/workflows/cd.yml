@@ -1,0 +1,38 @@
+name: CD - Deploy to Databricks
+
+on:
+  push:
+    branches:
+      - dev
+      - qa
+      - prod
+
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Databricks
+    runs-on: ubuntu-latest
+
+    env:
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Determine Databricks target
+        run: echo "TARGET=${GITHUB_REF_NAME}" >> "$GITHUB_ENV"
+
+      - name: Check Databricks connection
+        run: databricks current-user me
+
+      - name: Validate Databricks bundle
+        run: databricks bundle validate --target "$TARGET"
+
+      - name: Deploy Databricks bundle
+        run: databricks bundle deploy --target "$TARGET"
