@@ -1,6 +1,7 @@
 name: CD - Deploy to Databricks
 
 on:
+
   push:
     branches:
       - dev
@@ -9,68 +10,83 @@ on:
 
   workflow_dispatch:
 
+
 jobs:
+
   deploy:
+
     name: Deploy to Databricks
+
     runs-on: ubuntu-latest
 
+
+    # Branch name selects GitHub Environment
+    #
+    # dev  -> dev environment
+    # qa   -> qa environment
+    # prod -> prod environment
+
+    environment:
+      name: ${{ github.ref_name }}
+
+
     env:
-      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+
       DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+
       DATABRICKS_AUTH_TYPE: pat
+
       TARGET: ${{ github.ref_name }}
 
+
     steps:
+
       - name: Checkout repository
         uses: actions/checkout@v4
+
 
       - name: Install Databricks CLI
         uses: databricks/setup-cli@main
 
-      - name: Verify Databricks credentials
-        run: |
-          if [ -z "$DATABRICKS_HOST" ]; then
-            echo "❌ DATABRICKS_HOST is EMPTY"
-            exit 1
-          else
-            echo "✅ DATABRICKS_HOST exists"
-          fi
-
-          if [ -z "$DATABRICKS_TOKEN" ]; then
-            echo "❌ DATABRICKS_TOKEN is EMPTY"
-            exit 1
-          else
-            echo "✅ DATABRICKS_TOKEN exists"
-          fi
-
-          echo "Token length: ${#DATABRICKS_TOKEN}"
-
-      - name: Diagnose Databricks authentication
-        run: |
-          echo "Host configured: $([[ -n "$DATABRICKS_HOST" ]] && echo YES || echo NO)"
-          echo "Token configured: $([[ -n "$DATABRICKS_TOKEN" ]] && echo YES || echo NO)"
-          echo "Token length: ${#DATABRICKS_TOKEN}"
-
-          HTTP_CODE=$(curl -sS -o /tmp/db_response.txt \
-            -w "%{http_code}" \
-            -H "Authorization: Bearer $DATABRICKS_TOKEN" \
-            "$DATABRICKS_HOST/api/2.0/preview/scim/v2/Me")
-
-          echo "Databricks API HTTP status: $HTTP_CODE"
-
-          if [ "$HTTP_CODE" != "200" ]; then
-            echo "Databricks authentication failed."
-            cat /tmp/db_response.txt
-            exit 1
-          fi
-
-          echo "Databricks authentication successful."
 
       - name: Check Databricks connection
-        run: databricks current-user me --target "$TARGET"
+        run: |
+          databricks current-user me
+
 
       - name: Validate Databricks bundle
-        run: databricks bundle validate --target "$TARGET"
+        run: |
+          databricks bundle validate \
+            --target "$TARGET"
+
 
       - name: Deploy Databricks bundle
-        run: databricks bundle deploy --target "$TARGET"
+        run: |
+          databricks bundle deploy \
+            --target "$TARGET"
+
+
+      # ----------------------------------
+      # Tests run on Databricks compute
+      # ----------------------------------
+
+      - name: Run Databricks integration tests
+        run: |
+          databricks bundle run \
+            --target "$TARGET" \
+            ehr_integration_tests
+
+
+      # ----------------------------------
+      # Run actual ML job in DEV and QA
+      # ----------------------------------
+
+      - name: Run ML job
+        if: github.ref_name != 'prod'
+
+        run: |
+          databricks bundle run \
+            --target "$TARGET" \
+            ehr_ml_job

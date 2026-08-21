@@ -1,37 +1,123 @@
 bundle:
   name: test-databricks-connection
 
+
 variables:
+
   environment:
     default: dev
 
+
 resources:
+
   jobs:
-    hello_job:
-      name: ${var.environment}-hello-job
+
+    # ------------------------------------
+    # Databricks integration test job
+    # ------------------------------------
+
+    ehr_integration_tests:
+
+      name: ${var.environment}-ehr-integration-tests
 
       tasks:
-        - task_key: hello_task
+
+        - task_key: run_integration_tests
 
           spark_python_task:
-            python_file: ./src/hello.py
+            python_file: ./integration/run_tests.py
 
           environment_key: default
 
+
       environments:
+
         - environment_key: default
+
           spec:
-            environment_version: "4"
+            environment_version: "5"
+
+            dependencies:
+              - "pytest>=8,<9"
+              - "pandas>=2.2,<3"
+              - "numpy>=1.26,<3"
+              - "scikit-learn>=1.5,<2"
+
+
+    # ------------------------------------
+    # Actual ML job
+    # ------------------------------------
+
+    ehr_ml_job:
+
+      name: ${var.environment}-ehr-ml-job
+
+      tasks:
+
+        - task_key: hospitalization_prediction
+
+          spark_python_task:
+            python_file: ./src/train.py
+
+            parameters:
+              - "--target"
+              - "hospitalized_30d"
+
+          environment_key: default
+
+
+        - task_key: er_prediction
+
+          spark_python_task:
+            python_file: ./src/train.py
+
+            parameters:
+              - "--target"
+              - "er_visit_30d"
+
+          environment_key: default
+
+
+        - task_key: length_of_stay_prediction
+
+          spark_python_task:
+            python_file: ./src/train.py
+
+            parameters:
+              - "--target"
+              - "length_of_stay_days"
+
+          environment_key: default
+
+
+      environments:
+
+        - environment_key: default
+
+          spec:
+            environment_version: "5"
+
+            dependencies:
+              - "pandas>=2.2,<3"
+              - "numpy>=1.26,<3"
+              - "scikit-learn>=1.5,<2"
+
 
 targets:
+
   dev:
+
     variables:
       environment: dev
 
+
   qa:
+
     variables:
       environment: qa
 
+
   prod:
+
     variables:
       environment: prod
