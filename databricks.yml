@@ -1,6 +1,12 @@
 bundle:
   name: test-databricks-connection
 
+sync:
+  include:
+    - src/**
+    - data/**
+    - tests/**
+    - integration/**
 
 variables:
 
