@@ -1,7 +1,6 @@
 name: CD - Deploy to Databricks
 
 on:
-
   push:
     branches:
       - dev
@@ -10,68 +9,41 @@ on:
 
   workflow_dispatch:
 
-
 jobs:
-
   deploy:
-
     name: Deploy to Databricks
-
     runs-on: ubuntu-latest
-
-
-    # Branch name selects GitHub Environment
-    #
-    # dev  -> dev environment
-    # qa   -> qa environment
-    # prod -> prod environment
 
     environment:
       name: ${{ github.ref_name }}
 
-
     env:
-
       DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
-
       DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-
       DATABRICKS_AUTH_TYPE: pat
-
       TARGET: ${{ github.ref_name }}
 
-
     steps:
-
       - name: Checkout repository
         uses: actions/checkout@v4
-
 
       - name: Install Databricks CLI
         uses: databricks/setup-cli@main
 
-
       - name: Check Databricks connection
         run: |
-          databricks current-user me \
-            --target "$TARGET"
-
+          cd /tmp
+          databricks current-user me
 
       - name: Validate Databricks bundle
         run: |
           databricks bundle validate \
             --target "$TARGET"
 
-
       - name: Deploy Databricks bundle
         run: |
           databricks bundle deploy \
             --target "$TARGET"
-
-
-      # ----------------------------------
-      # Tests run on Databricks compute
-      # ----------------------------------
 
       - name: Run Databricks integration tests
         run: |
@@ -79,14 +51,8 @@ jobs:
             --target "$TARGET" \
             ehr_integration_tests
 
-
-      # ----------------------------------
-      # Run actual ML job in DEV and QA
-      # ----------------------------------
-
       - name: Run ML job
         if: github.ref_name != 'prod'
-
         run: |
           databricks bundle run \
             --target "$TARGET" \
