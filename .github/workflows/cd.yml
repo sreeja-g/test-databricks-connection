@@ -1,0 +1,79 @@
+name: CD - Deploy to Databricks
+
+on:
+  push:
+    branches:
+      - dev
+      - qa
+      - prod
+
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Databricks
+    runs-on: ubuntu-latest
+
+    environment:
+      name: ${{ github.ref_name }}
+
+    env:
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+      DATABRICKS_AUTH_TYPE: pat
+      TARGET: ${{ github.ref_name }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Check Databricks configuration
+        run: |
+          echo "Branch: $GITHUB_REF_NAME"
+          echo "Target: $TARGET"
+
+          if [ -z "$DATABRICKS_HOST" ]; then
+            echo "ERROR: DATABRICKS_HOST is empty"
+            exit 1
+          fi
+
+          if [ -z "$DATABRICKS_TOKEN" ]; then
+            echo "ERROR: DATABRICKS_TOKEN is empty"
+            exit 1
+          fi
+
+          echo "DATABRICKS_HOST is configured"
+          echo "DATABRICKS_TOKEN is configured"
+
+          databricks auth describe
+
+      - name: Check Databricks connection
+        run: |
+          cd /tmp
+          databricks current-user me
+
+      - name: Validate Databricks bundle
+        run: |
+          databricks bundle validate \
+            --target "$TARGET"
+
+      - name: Deploy Databricks bundle
+        run: |
+          databricks bundle deploy \
+            --target "$TARGET"
+
+      - name: Run Databricks integration tests
+        run: |
+          databricks bundle run \
+            --target "$TARGET" \
+            ehr_integration_tests
+
+      - name: Run ML job
+        if: github.ref_name != 'prod'
+        run: |
+          databricks bundle run \
+            --target "$TARGET" \
+            ehr_ml_job
