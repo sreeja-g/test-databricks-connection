@@ -53,7 +53,8 @@ jobs:
 
       - name: Check Databricks connection
         run: |
-          databricks current-user me
+          databricks current-user me \
+            --target "$TARGET"
 
 
       - name: Validate Databricks bundle
