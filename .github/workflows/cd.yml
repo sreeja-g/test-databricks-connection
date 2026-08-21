@@ -30,6 +30,26 @@ jobs:
       - name: Install Databricks CLI
         uses: databricks/setup-cli@main
 
+      - name: Check Databricks configuration
+        run: |
+          echo "Branch: $GITHUB_REF_NAME"
+          echo "Target: $TARGET"
+
+          if [ -z "$DATABRICKS_HOST" ]; then
+            echo "ERROR: DATABRICKS_HOST is empty"
+            exit 1
+          fi
+
+          if [ -z "$DATABRICKS_TOKEN" ]; then
+            echo "ERROR: DATABRICKS_TOKEN is empty"
+            exit 1
+          fi
+
+          echo "DATABRICKS_HOST is configured"
+          echo "DATABRICKS_TOKEN is configured"
+
+          databricks auth describe
+
       - name: Check Databricks connection
         run: |
           cd /tmp
